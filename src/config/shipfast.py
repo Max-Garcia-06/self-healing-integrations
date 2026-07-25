@@ -1,12 +1,4 @@
-"""ShipFast connection settings.
-
-Reads ShipFast connection and credential settings from the environment and
-exposes them as a single settings object. Assembles the complete outbound
-vendor header set in one place so callers never need to know individual
-header names.
-"""
-
-from __future__ import annotations
+"""ShipFast connection settings."""
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,28 +7,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class ShipFastSettings(BaseSettings):
     """Connection and credential settings for the ShipFast provider.
 
-    Values are read from the environment. Credentials are stored as
-    `SecretStr` so they are never accidentally logged or serialized.
+    Reads configuration from the environment and exposes a single method
+    to assemble the complete outbound headers for ShipFast requests, so
+    no caller needs to build or reference individual headers itself.
     """
 
-    model_config = SettingsConfigDict(
-        env_prefix="SHIPFAST_",
-        frozen=True,
-    )
+    model_config = SettingsConfigDict(frozen=True)
 
-    base_url: str
-    api_key: SecretStr
-    account_number: SecretStr
-    shipper_id: str
+    shipfast_base_url: str
+    shipfast_api_key: SecretStr
+    shipfast_account_number: SecretStr
+    shipfast_shipper_id: str
 
     def vendor_headers(self) -> dict[str, str]:
-        """Assemble the complete outbound HTTP header set for ShipFast.
-
-        Per the pinned ShipFast Rates API spec, the only header required to
-        authenticate a request is `Authorization`, carrying a bearer token
-        built from the API key. This is the sole place in the codebase that
-        knows this header name; callers must never reference it directly.
-        """
+        """Assemble the complete outbound HTTP header set for ShipFast."""
         return {
-            "Authorization": f"Bearer {self.api_key.get_secret_value()}",
+            "Authorization": f"Bearer {self.shipfast_api_key.get_secret_value()}",
+            "X-Shipper-Id": self.shipfast_shipper_id,
         }
