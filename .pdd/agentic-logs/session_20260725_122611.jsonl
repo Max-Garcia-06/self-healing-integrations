@@ -1,1 +1,0 @@
-{"timestamp": "2026-07-25T12:26:11.926465", "label": "step1", "cwd": "/Users/maxgarcia/self-healing-integrations", "provider": "anthropic", "model": "claude-opus-5[1m]", "success": true, "false_positive": false, "cost_usd": 0.5349827500000001, "duration_seconds": 91.4, "prompt_length": 6673, "response_length": 1282, "requested_effort": null, "effective_effort": null}

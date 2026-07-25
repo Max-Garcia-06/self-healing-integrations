@@ -3,10 +3,14 @@
 Demo infrastructure: hand-written, not generated. Simulates a shipping carrier
 that ships a breaking API change (v3) while v2 is still nominally "current"
 until an admin flips the live version.
+
+Request and response shapes are kept EXACTLY in step with the pinned snapshots
+in context/specs/shipfast/. The snapshot is the source of truth; if these two
+disagree the adapter fails for reasons that have nothing to do with the heal.
 """
 import os
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -19,47 +23,52 @@ if _live_version not in VALID_VERSIONS:
 
 
 class Parcel(BaseModel):
+    weight_oz: int = Field(gt=0)
     length_in: float = Field(gt=0)
     width_in: float = Field(gt=0)
     height_in: float = Field(gt=0)
-    weight_lb: float = Field(gt=0)
 
 
-class Destination(BaseModel):
-    address1: str
-    city: str
-    state: str
+class Address(BaseModel):
     postal_code: str
-    country: str
+    country_code: str
+    line1: str | None = None
+    line2: str | None = None
+    city: str | None = None
+    region: str | None = None
 
 
-class RatesRequest(BaseModel):
+class RateRequest(BaseModel):
     parcel: Parcel
-    destination: Destination
+    destination: Address
+    account_number: str | None = None
 
 
 class VersionUpdate(BaseModel):
     version: str
 
 
-# service_code -> (base_cents, cents_per_lb, transit_mode, estimated_days)
+# service_code -> (base_cents, cents_per_lb, transit_mode, service_name, estimated_days)
 SERVICE_TABLE = {
-    "GND_ECON": (550, 205, "ground", 7),
-    "GND": (795, 142, "ground", 5),
-    "AIR_2DAY": (1450, 310, "air", 2),
-    "AIR_NEXT": (2600, 380, "air", 1),
-    "FREIGHT": (4000, 90, "freight", 6),
+    "GND_ECON": (550, 205, "ground", "Ground Economy", 7),
+    "GND": (795, 142, "ground", "Ground Standard", 5),
+    "AIR_2DAY": (1450, 310, "air", "Air 2-Day", 2),
+    "AIR_NEXT": (2600, 380, "air", "Air Next Day", 1),
+    "FREIGHT": (4000, 90, "freight", "Freight LTL", 6),
 }
 
 
-def quote_services(weight_lb: float) -> list[dict]:
+def quote_services(weight_oz: int) -> list[dict]:
+    weight_lb = weight_oz / 16.0
     services = []
-    for code, (base_cents, cents_per_lb, transit_mode, days) in SERVICE_TABLE.items():
+    for code, (base_cents, cents_per_lb, transit_mode, name, days) in SERVICE_TABLE.items():
         price_cents = base_cents + round(cents_per_lb * weight_lb)
         services.append(
             {
                 "service_code": code,
+                "service_name": name,
                 "price_cents": price_cents,
+                "currency": "USD",
                 "transit_mode": transit_mode,
                 "estimated_days": days,
             }
@@ -71,22 +80,22 @@ def retired_response(version: str) -> JSONResponse:
     return JSONResponse(
         status_code=410,
         content={
-            "error": f"API version {version} has been retired. "
-            f"Current live version is {_live_version}."
+            "code": "version_retired",
+            "message": f"API version {version} has been retired. "
+            f"Current live version is {_live_version}.",
         },
     )
 
 
 @app.post("/v2/rates")
-async def rates_v2(body: RatesRequest):
+async def rates_v2(body: RateRequest):
     if _live_version != "v2":
         return retired_response("v2")
-    services = quote_services(body.parcel.weight_lb)
-    return {"services": services}
+    return {"request_id": "mock-v2", "rates": quote_services(body.parcel.weight_oz)}
 
 
 @app.post("/v3/rates")
-async def rates_v3(body: RatesRequest, x_shipper_id: str | None = Header(default=None)):
+async def rates_v3(body: RateRequest, x_shipper_id: str | None = Header(default=None)):
     if _live_version != "v3":
         return retired_response("v3")
     if not x_shipper_id:
@@ -94,17 +103,17 @@ async def rates_v3(body: RatesRequest, x_shipper_id: str | None = Header(default
             status_code=400,
             detail="X-Shipper-Id header is required for v3 API",
         )
-    services = quote_services(body.parcel.weight_lb)
-    v3_services = [
+    v3_rates = [
         {
             "service_level": s["service_code"],
-            "amount": {"value": s["price_cents"], "currency": "USD"},
+            "service_name": s["service_name"],
+            "amount": {"value": s["price_cents"], "currency": s["currency"]},
             "transit_mode": s["transit_mode"],
             "estimated_days": s["estimated_days"],
         }
-        for s in services
+        for s in quote_services(body.parcel.weight_oz)
     ]
-    return {"services": v3_services}
+    return {"request_id": "mock-v3", "rates": v3_rates}
 
 
 @app.get("/admin/version")

@@ -54,6 +54,15 @@ R6 (MUST NOT): Log or return the ShipFast API key, account number, or customer a
 <include>context/specs/shipfast/openapi.snapshot.json</include>
 <include mode="interface">src/shipping.py</include>
 <include mode="interface">src/shipfast_config.py</include>
+
+<import_paths>
+The two dependency modules are importable as `src.shipping` and
+`src.shipfast_config`. Import exactly:
+    from src.shipping import Parcel, Address, Quote, NoServiceAvailable, ProviderTimeout
+    from src.shipfast_config import ShipFastSettings
+Do not invent submodule paths such as `shipping.domain` or
+`shipping.shipfast_settings`; those do not exist.
+</import_paths>
 </dependencies>
 
 <coverage>
