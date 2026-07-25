@@ -1,0 +1,40 @@
+{
+  "approved_aliases": [],
+  "approved_aliases_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "entries": [
+    {
+      "canonical_relpath": ".pdd/meta/shipping_python_run.json",
+      "desired_digest": "798a070de301f22a02d8f9c85e0fb9c40cb3da750599779d3a44b6ee2aa5032c",
+      "desired_mode": "100644",
+      "installed": true,
+      "precondition": {
+        "digest": "777788edbfb52f51eb206945d0a02daa2eb1889439abeacbb3ea00b429d37407",
+        "exists": true,
+        "file_type": "regular",
+        "git_mode": "100644"
+      },
+      "prepared_blob": "prepared-0.blob",
+      "relpath": ".pdd/meta/shipping_python_run.json",
+      "rollback_blob": "rollback-0.blob"
+    },
+    {
+      "canonical_relpath": ".pdd/meta/shipping_python.json",
+      "desired_digest": "056f5e6154ac422b6d99705c839874db6f7465de4fdfe18ad86f2cc4dbd270ad",
+      "desired_mode": "100644",
+      "installed": true,
+      "precondition": {
+        "digest": "2012d7c6ee9e17f50225692f60facdba3e803de7f9d4a7ae74287301af5d65ce",
+        "exists": true,
+        "file_type": "regular",
+        "git_mode": "100644"
+      },
+      "prepared_blob": "prepared-1.blob",
+      "relpath": ".pdd/meta/shipping_python.json",
+      "rollback_blob": "rollback-1.blob"
+    }
+  ],
+  "phase": "COMMITTED",
+  "schema_version": 2,
+  "shared_resources": [],
+  "transaction_id": "legacy-metadata-87252806683d2943c8ed-ce38aebf2e9740cfa5899b0fefe7d29b"
+}

@@ -1,0 +1,25 @@
+{
+  "approved_aliases": [],
+  "approved_aliases_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "entries": [
+    {
+      "canonical_relpath": ".pdd/meta/shipfast_adapter_python.json",
+      "desired_digest": "6111974773ce04be826471859fdb4997156da0124ca14a3be0e99dee2912efc8",
+      "desired_mode": "100644",
+      "installed": true,
+      "precondition": {
+        "digest": null,
+        "exists": false,
+        "file_type": "missing",
+        "git_mode": null
+      },
+      "prepared_blob": "prepared-0.blob",
+      "relpath": ".pdd/meta/shipfast_adapter_python.json",
+      "rollback_blob": null
+    }
+  ],
+  "phase": "COMMITTED",
+  "schema_version": 2,
+  "shared_resources": [],
+  "transaction_id": "legacy-metadata-dbfd22c77afff72e3115-36ff91cce84c46b8a9b341d11735468f"
+}

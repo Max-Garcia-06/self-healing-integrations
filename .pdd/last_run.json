@@ -1,0 +1,46 @@
+{
+  "2e105ea8965765e3": {
+    "argv": [
+      "--force",
+      "sync",
+      "shipping",
+      "--budget",
+      "2.00"
+    ],
+    "project_root": "/Users/maxgarcia/self-healing-integrations",
+    "fingerprint": "7f77025721706a178e1423cc51eb2d6b4f0a4207525f0d96969e97f2beac6879",
+    "git_head": "fa249b8269acb01df7746ee17a25abafdf4ba039",
+    "subcommand": "sync",
+    "timestamp": 1785013394.078354
+  },
+  "84a9702692c6f7d3": {
+    "argv": [
+      "--force",
+      "sync",
+      "shipfast_config",
+      "--budget",
+      "2.00",
+      "--skip-tests"
+    ],
+    "project_root": "/Users/maxgarcia/self-healing-integrations",
+    "fingerprint": "7f77025721706a178e1423cc51eb2d6b4f0a4207525f0d96969e97f2beac6879",
+    "git_head": "fa249b8269acb01df7746ee17a25abafdf4ba039",
+    "subcommand": "sync",
+    "timestamp": 1785013583.0780659
+  },
+  "328ca140106d559a": {
+    "argv": [
+      "--force",
+      "sync",
+      "shipfast_adapter",
+      "--budget",
+      "2.00",
+      "--skip-tests"
+    ],
+    "project_root": "/Users/maxgarcia/self-healing-integrations",
+    "fingerprint": "f5e47cbae6e3180b50bc161b86968779a29e71d9047cdd8cd9f02f354c1cc839",
+    "git_head": "fa249b8269acb01df7746ee17a25abafdf4ba039",
+    "subcommand": "sync",
+    "timestamp": 1785014121.756382
+  }
+}

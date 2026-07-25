@@ -1,0 +1,13 @@
+{
+  "pdd_version": "0.0.308",
+  "timestamp": "2026-07-25T20:57:28.953681+00:00",
+  "command": "auto-deps",
+  "prompt_hash": "f154f56918a8ea439c2b1b7d989825933a81ddd37311f2d7c6d295bbfb021a92",
+  "code_hash": null,
+  "example_hash": null,
+  "test_hash": null,
+  "test_files": {},
+  "include_deps": {
+    "context/project_preamble.prompt": "ee6934cad748f08438fab87d43b41f48a5e1945cbf4b08994aff5127f56c62f9"
+  }
+}

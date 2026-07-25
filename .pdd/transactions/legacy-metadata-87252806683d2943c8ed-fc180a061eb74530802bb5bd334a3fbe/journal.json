@@ -1,0 +1,25 @@
+{
+  "approved_aliases": [],
+  "approved_aliases_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "entries": [
+    {
+      "canonical_relpath": ".pdd/meta/shipping_python.json",
+      "desired_digest": "2012d7c6ee9e17f50225692f60facdba3e803de7f9d4a7ae74287301af5d65ce",
+      "desired_mode": "100644",
+      "installed": true,
+      "precondition": {
+        "digest": "a728d6d1d601f4971191f4e98093991fda61c51ede9254a85eb16aa1d5e1d940",
+        "exists": true,
+        "file_type": "regular",
+        "git_mode": "100644"
+      },
+      "prepared_blob": "prepared-0.blob",
+      "relpath": ".pdd/meta/shipping_python.json",
+      "rollback_blob": "rollback-0.blob"
+    }
+  ],
+  "phase": "COMMITTED",
+  "schema_version": 2,
+  "shared_resources": [],
+  "transaction_id": "legacy-metadata-87252806683d2943c8ed-fc180a061eb74530802bb5bd334a3fbe"
+}
