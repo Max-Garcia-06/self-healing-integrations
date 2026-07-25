@@ -1,0 +1,73 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ShipFast Rates API (pinned snapshot)",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/v2/rates": {
+      "post": {
+        "summary": "Get shipping rate quotes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Available services and their rates",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RateResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RateRequest": {
+        "type": "object",
+        "required": ["origin_zip", "destination_zip", "weight_oz"],
+        "properties": {
+          "origin_zip": { "type": "string" },
+          "destination_zip": { "type": "string" },
+          "weight_oz": { "type": "integer" }
+        }
+      },
+      "RateResponse": {
+        "type": "object",
+        "properties": {
+          "services": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Service" }
+          }
+        }
+      },
+      "Service": {
+        "type": "object",
+        "required": ["service_code", "price_cents", "transit_mode"],
+        "properties": {
+          "service_code": {
+            "type": "string",
+            "description": "Vendor identifier for the service tier."
+          },
+          "price_cents": {
+            "type": "integer",
+            "description": "Flat integer price in the response currency's minor units."
+          },
+          "transit_mode": {
+            "type": "string",
+            "enum": ["ground", "surface", "air", "freight"],
+            "description": "Distinguishes ground/surface transit from air and freight."
+          }
+        }
+      }
+    }
+  }
+}

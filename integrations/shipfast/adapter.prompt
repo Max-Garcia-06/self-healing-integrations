@@ -1,0 +1,48 @@
+% You are an expert Python engineer. Implement the ShipFast shipping-rate adapter.
+
+<include>context/project_preamble.prompt</include>
+
+<pdd-interface>
+{"type":"module","module":{"functions":[
+  {"name":"get_quote","signature":"(parcel: Parcel, destination: Address) -> Quote",
+   "returns":"Quote"}]}}
+</pdd-interface>
+
+<responsibility>
+Translate Northwind's internal Parcel and Address types into a ShipFast rate request,
+call the ShipFast rates endpoint, and translate the response into our internal Quote type.
+</responsibility>
+
+<non_responsibilities>
+- Does not choose between carriers; the caller does.
+- Does not persist quotes.
+- Does not purchase labels or handle payment.
+</non_responsibilities>
+
+<vocabulary>
+- Ground service: any ShipFast service whose transit mode is surface or ground,
+  excluding air and freight.
+- Quoted price: the total the customer will be charged, in integer minor units of the
+  quote currency, inclusive of carrier surcharges and exclusive of tax.
+</vocabulary>
+
+<contract_rules>
+R1 (MUST): Return the cheapest available ground service for the given parcel and destination.
+R2 (MUST): Express quoted price in integer minor units of the response currency.
+R3 (MUST): Raise NoServiceAvailable when the provider returns zero eligible ground services.
+R4 (MUST NOT): Retry a request that failed with a 4xx status other than 429.
+R5 (MUST): Time out after 3 seconds and raise ProviderTimeout.
+R6 (MUST NOT): Log or return the ShipFast API key, account number, or customer address lines.
+</contract_rules>
+
+<dependencies>
+<include>context/specs/shipfast/openapi.snapshot.json</include>
+<include mode="interface">src/types/shipping.py</include>
+</dependencies>
+
+<coverage>
+R1: story__cheapest_ground_rate.md
+R2: story__price_in_minor_units.md
+R3: story__no_ground_service_available.md
+R6: story__provider_secrets_not_leaked.md
+</coverage>

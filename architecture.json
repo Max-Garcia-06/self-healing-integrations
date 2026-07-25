@@ -1,0 +1,31 @@
+{
+  "project": "self-healing-integrations",
+  "modules": [
+    {
+      "path": "src/types/shipping.py",
+      "type": "types",
+      "description": "Internal domain types: Parcel, Address, Quote. No vendor concepts.",
+      "depends_on": [],
+      "pdd_interface": "<pdd-interface>\n{\"type\":\"module\",\"module\":{\"types\":[{\"name\":\"Parcel\"},{\"name\":\"Address\"},{\"name\":\"Quote\"}]}}\n</pdd-interface>"
+    },
+    {
+      "path": "integrations/shipfast/adapter.py",
+      "type": "adapter",
+      "description": "Translates internal Parcel/Address into a ShipFast rate request and the response back into Quote.",
+      "depends_on": [
+        "src/types/shipping.py",
+        "context/specs/shipfast/openapi.snapshot.json"
+      ],
+      "pdd_interface": "<pdd-interface>\n{\"type\":\"module\",\"module\":{\"functions\":[{\"name\":\"get_quote\",\"signature\":\"(parcel: Parcel, destination: Address) -> Quote\",\"returns\":\"Quote\"}]}}\n</pdd-interface>"
+    },
+    {
+      "path": "verification/story_gate.py",
+      "type": "verification",
+      "description": "Runs the user-story regression suite against a regenerated candidate and returns a pass/fail evidence manifest.",
+      "depends_on": [
+        "src/types/shipping.py"
+      ],
+      "pdd_interface": "<pdd-interface>\n{\"type\":\"module\",\"module\":{\"functions\":[{\"name\":\"run_story_gate\",\"signature\":\"(candidate_module: str, stories_dir: str) -> EvidenceManifest\",\"returns\":\"EvidenceManifest\"}]}}\n</pdd-interface>"
+    }
+  ]
+}
