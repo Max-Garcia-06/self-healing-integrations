@@ -1,0 +1,189 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ShipFast Rates API",
+    "version": "2.4.1",
+    "x-pinned-at": "2026-07-25T00:00:00Z",
+    "description": "Pinned snapshot of the ShipFast rating API as consumed by Northwind. This file is the sole source of vendor wire-format facts. It is replaced, not edited, when the vendor ships a change."
+  },
+  "servers": [
+    { "url": "http://localhost:8081", "description": "Local mock upstream" }
+  ],
+  "paths": {
+    "/v2/rates": {
+      "post": {
+        "operationId": "getRates",
+        "summary": "Return available shipping services and prices for a parcel and destination.",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Bearer <api_key>"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Available services.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RateResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing credentials.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. Retryable.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RateRequest": {
+        "type": "object",
+        "required": ["parcel", "destination"],
+        "properties": {
+          "account_number": {
+            "type": "string",
+            "description": "ShipFast account number. Sensitive."
+          },
+          "parcel": { "$ref": "#/components/schemas/Parcel" },
+          "destination": { "$ref": "#/components/schemas/Address" }
+        }
+      },
+      "Parcel": {
+        "type": "object",
+        "required": ["weight_oz", "length_in", "width_in", "height_in"],
+        "properties": {
+          "weight_oz": {
+            "type": "integer",
+            "description": "Parcel weight in whole ounces."
+          },
+          "length_in": { "type": "number" },
+          "width_in": { "type": "number" },
+          "height_in": { "type": "number" }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "required": ["postal_code", "country_code"],
+        "properties": {
+          "line1": { "type": "string", "description": "Sensitive." },
+          "line2": { "type": "string", "description": "Sensitive." },
+          "city": { "type": "string" },
+          "region": {
+            "type": "string",
+            "description": "State or province code."
+          },
+          "postal_code": { "type": "string" },
+          "country_code": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2."
+          }
+        }
+      },
+      "RateResponse": {
+        "type": "object",
+        "required": ["rates"],
+        "properties": {
+          "request_id": { "type": "string" },
+          "rates": {
+            "type": "array",
+            "description": "All services available for this parcel and destination. May be empty.",
+            "items": { "$ref": "#/components/schemas/Rate" }
+          }
+        }
+      },
+      "Rate": {
+        "type": "object",
+        "required": [
+          "service_code",
+          "service_name",
+          "transit_mode",
+          "price_cents",
+          "currency"
+        ],
+        "properties": {
+          "service_code": {
+            "type": "string",
+            "description": "Machine identifier for the service, e.g. GR_STD, GR_ECON, AIR_2DAY.",
+            "examples": ["GR_STD", "GR_ECON", "AIR_2DAY", "FRT_LTL"]
+          },
+          "service_name": {
+            "type": "string",
+            "description": "Human-readable service name.",
+            "examples": ["Ground Standard", "Ground Economy", "Air 2-Day"]
+          },
+          "transit_mode": {
+            "type": "string",
+            "description": "Physical transport mode for this service.",
+            "enum": ["surface", "ground", "air", "freight"]
+          },
+          "price_cents": {
+            "type": "integer",
+            "description": "Total charged to the shipper in minor units of `currency`, inclusive of all carrier surcharges, exclusive of tax."
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 code.",
+            "examples": ["USD"]
+          },
+          "estimated_days": {
+            "type": "integer",
+            "description": "Estimated transit days."
+          },
+          "surcharges": {
+            "type": "array",
+            "description": "Itemization only. Already included in price_cents.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "string" },
+                "amount_cents": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}

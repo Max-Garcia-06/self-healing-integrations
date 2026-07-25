@@ -28,10 +28,15 @@ Parcel, Address, Quote, and the exceptions NoServiceAvailable and ProviderTimeou
 </vocabulary>
 
 <contract_rules>
-T1 (MUST): Parcel carries the physical attributes needed to request a rate.
-T2 (MUST): Address carries the destination attributes needed to request a rate.
-T3 (MUST): Quote carries exactly two fields: an integer minor-unit value and a
-currency string.
+T1 (MUST): Parcel carries the physical attributes needed to request a rate, in
+our own metric units and no other: weight_grams (int), length_mm (int),
+width_mm (int), height_mm (int). All must be positive.
+T2 (MUST): Address carries the destination attributes needed to request a rate:
+line1 (str | None), line2 (str | None), city (str), state_or_province
+(str | None), postal_code (str), country_code (str, ISO 3166-1 alpha-2).
+line1 and line2 are the customer's street address and are sensitive.
+T3 (MUST): Quote carries exactly two fields: amount_minor_units (int) and
+currency (str, ISO 4217).
 T4 (MUST): NoServiceAvailable and ProviderTimeout are exceptions defined in this
 same module.
 T5 (MUST NOT): None of these types or exceptions reference any vendor, carrier,

@@ -36,6 +36,15 @@ R6 (MUST NOT): Log or return the ShipFast API key, account number, or customer a
 </contract_rules>
 
 <implementation_constraints>
+- Import the internal domain types with exactly
+  `from src.types.shipping import Address, NoServiceAvailable, Parcel, ProviderTimeout, Quote`
+  and the settings object with exactly
+  `from src.config.shipfast import ShipFastSettings`. Use no other module paths.
+- Construct the settings object inside get_quote, not at module import time, so
+  importing this module never requires the environment to be configured.
+- Our Parcel is metric (grams, millimetres) and the vendor is imperial. Convert
+  at the boundary: weight to whole ounces, dimensions to inches. Round the
+  ounce weight to the nearest whole ounce.
 - Get every outbound header from the settings object's vendor_headers() method.
   Never construct a header by hand and never name an individual header anywhere
   in this module — this is the single most important line in this file.

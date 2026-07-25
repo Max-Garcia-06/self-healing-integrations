@@ -49,11 +49,17 @@ class VersionUpdate(BaseModel):
 
 
 # service_code -> (base_cents, cents_per_lb, transit_mode, service_name, estimated_days)
+# Tuned so that the canonical demo parcel — 3 lb (1361 g) to Denver, CO 80202 —
+# reproduces user_stories/story__cheapest_ground_rate.md exactly:
+#   GND       ground   $12.40  <-- cheapest GROUND, the expected answer (1240)
+#   GND_ECON  ground   $14.10
+#   AIR_2DAY  air      $ 9.90  <-- cheaper than both, but not ground: never eligible
+# The story is the durable artifact; this table serves the story, not vice versa.
 SERVICE_TABLE = {
-    "GND_ECON": (550, 205, "ground", "Ground Economy", 7),
-    "GND": (795, 142, "ground", "Ground Standard", 5),
-    "AIR_2DAY": (1450, 310, "air", "Air 2-Day", 2),
-    "AIR_NEXT": (2600, 380, "air", "Air Next Day", 1),
+    "GND_ECON": (900, 170, "ground", "Ground Economy", 7),
+    "GND": (700, 180, "ground", "Ground Standard", 5),
+    "AIR_2DAY": (600, 130, "air", "Air 2-Day", 2),
+    "AIR_NEXT": (1800, 250, "air", "Air Next Day", 1),
     "FREIGHT": (4000, 90, "freight", "Freight LTL", 6),
 }
 

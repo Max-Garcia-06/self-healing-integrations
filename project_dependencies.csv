@@ -1,1 +1,3 @@
 full_path,file_summary,key_exports,dependencies,content_hash
+examples/shipfast_adapter_example.py,Example script demonstrating how to request a shipping quote from ShipFast using the shipping domain models and adapter.,"[""main""]","[""os"", ""sys"", ""shipfast_adapter"", ""shipping.domain""]",7247f55392c956aa79e01f565d87a533104b88447ff7b451f7803751f3effef5
+examples/shipping_example.py,"Example script demonstrating construction of Parcel, Address, and Quote domain objects and handling of shipping exceptions via a simulated rate-lookup function.","[""build_parcel"", ""build_address"", ""fake_rate_lookup"", ""main""]","[""os"", ""sys"", ""shipping""]",4880fbffe87b378f228b7219ae6482b46d15fcf1f49255d47569bc174f8ef48d

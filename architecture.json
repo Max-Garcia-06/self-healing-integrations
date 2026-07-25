@@ -1,38 +1,43 @@
 [
   {
-    "filename": "src/types/shipping.prompt",
+    "filename": "src/types/shipping_python.prompt",
     "filepath": "src/types/shipping.py",
     "reason": "Internal domain types shared by every shipping-rate integration.",
     "description": "Parcel, Address, Quote, and the exceptions NoServiceAvailable and ProviderTimeout. No vendor concepts.",
     "dependencies": [],
     "priority": 1,
-    "tags": ["python", "types"]
+    "tags": [
+      "python",
+      "types"
+    ]
   },
   {
-    "filename": "src/config/shipfast.prompt",
+    "filename": "src/config/shipfast_python.prompt",
     "filepath": "src/config/shipfast.py",
     "reason": "ShipFast connection and credential settings.",
     "description": "Reads SHIPFAST_BASE_URL, SHIPFAST_API_KEY, SHIPFAST_ACCOUNT_NUMBER, and SHIPFAST_SHIPPER_ID from the environment and assembles the outbound vendor headers.",
     "dependencies": [],
     "priority": 2,
-    "tags": ["python", "config", "shipfast"]
+    "tags": [
+      "python",
+      "config",
+      "shipfast"
+    ]
   },
   {
-    "filename": "integrations/shipfast/adapter.prompt",
+    "filename": "integrations/shipfast/adapter_python.prompt",
     "filepath": "integrations/shipfast/adapter.py",
     "reason": "Translates Northwind's internal types into a ShipFast rate request and back.",
     "description": "Calls the ShipFast rates endpoint and returns the cheapest eligible ground Quote.",
-    "dependencies": ["src/types/shipping.prompt", "src/config/shipfast.prompt"],
+    "dependencies": [
+      "src/types/shipping_python.prompt",
+      "src/config/shipfast_python.prompt"
+    ],
     "priority": 3,
-    "tags": ["python", "adapter", "shipfast"]
-  },
-  {
-    "filename": "verification/story_gate.prompt",
-    "filepath": "verification/story_gate.py",
-    "reason": "Runs the user-story regression suite against a regenerated candidate.",
-    "description": "Returns a pass/fail evidence manifest for a candidate module against its user stories.",
-    "dependencies": ["src/types/shipping.prompt"],
-    "priority": 4,
-    "tags": ["python", "verification"]
+    "tags": [
+      "python",
+      "adapter",
+      "shipfast"
+    ]
   }
 ]
