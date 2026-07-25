@@ -33,4 +33,11 @@ C3 (MUST): Expose a vendor_headers() method returning the complete outbound
 header dict for the provider.
 C4 (MUST NOT): Expose any way for a caller to assemble headers itself or
 reference an individual header by name.
+C5 (MUST): Take every header NAME verbatim from the pinned provider spec
+included below. The spec is the only authority on what the provider's headers
+are called; never invent, abbreviate, or prefix a header name.
 </contract_rules>
+
+<dependencies>
+<include>context/specs/shipfast/openapi.snapshot.json</include>
+</dependencies>

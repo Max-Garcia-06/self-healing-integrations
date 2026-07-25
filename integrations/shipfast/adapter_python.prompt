@@ -33,6 +33,9 @@ R3 (MUST): Raise NoServiceAvailable when the provider returns zero eligible grou
 R4 (MUST NOT): Retry a request that failed with a 4xx status other than 429.
 R5 (MUST): Time out after 3 seconds and raise ProviderTimeout.
 R6 (MUST NOT): Log or return the ShipFast API key, account number, or customer address lines.
+R7 (MUST NOT): Report a transport, authentication, or protocol failure as NoServiceAvailable.
+NoServiceAvailable means the provider answered successfully with zero eligible ground services
+and nothing else. Any other unsuccessful response raises httpx.HTTPStatusError.
 </contract_rules>
 
 <implementation_constraints>

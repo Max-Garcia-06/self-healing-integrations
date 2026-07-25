@@ -1,31 +1,33 @@
-"""ShipFast shipping-rate adapter."""
+"""ShipFast shipping-rate adapter.
+
+Translates Northwind's internal Parcel/Address types into a ShipFast rate
+request, calls the ShipFast rates endpoint, and translates the response back
+into our internal Quote type.
+"""
 from __future__ import annotations
 
 import time
 
 import httpx
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
-from src.config.shipfast import ShipFastSettings
 from src.types.shipping import Address, NoServiceAvailable, Parcel, ProviderTimeout, Quote
+from src.config.shipfast import ShipFastSettings
 
 _TIMEOUT_SECONDS = 3.0
 _RETRY_DELAY_SECONDS = 0.2
-_GROUND_MODES = frozenset({"surface", "ground"})
-_GRAMS_PER_OUNCE = 28.349523125
-_MM_PER_INCH = 25.4
+_RATES_PATH = "/v2/rates"
+_GROUND_MODES = {"surface", "ground"}
 
 
-class _ParcelDTO(BaseModel):
-    model_config = ConfigDict(frozen=True)
+class _WireParcel(BaseModel):
     weight_oz: int
     length_in: float
     width_in: float
     height_in: float
 
 
-class _AddressDTO(BaseModel):
-    model_config = ConfigDict(frozen=True)
+class _WireAddress(BaseModel):
     line1: str | None = None
     line2: str | None = None
     city: str | None = None
@@ -34,86 +36,70 @@ class _AddressDTO(BaseModel):
     country_code: str
 
 
-class _RateRequestDTO(BaseModel):
-    model_config = ConfigDict(frozen=True)
+class _RateRequest(BaseModel):
     account_number: str
-    parcel: _ParcelDTO
-    destination: _AddressDTO
+    parcel: _WireParcel
+    destination: _WireAddress
 
 
-class _RateDTO(BaseModel):
-    model_config = ConfigDict(frozen=True)
+class _Rate(BaseModel):
     service_code: str
     service_name: str
     transit_mode: str
     price_cents: int
     currency: str
-    estimated_days: int | None = None
 
 
-class _RateResponseDTO(BaseModel):
-    model_config = ConfigDict(frozen=True)
+class _RateResponse(BaseModel):
     request_id: str | None = None
-    rates: list[_RateDTO] = []
+    rates: list[_Rate] = []
 
 
-def _to_parcel_dto(parcel: Parcel) -> _ParcelDTO:
-    weight_oz = round(parcel.weight_grams / _GRAMS_PER_OUNCE)
-    return _ParcelDTO(
-        weight_oz=weight_oz,
-        length_in=parcel.length_mm / _MM_PER_INCH,
-        width_in=parcel.width_mm / _MM_PER_INCH,
-        height_in=parcel.height_mm / _MM_PER_INCH,
+def _grams_to_oz(grams: int) -> int:
+    return round(grams * 0.03527396195)
+
+
+def _mm_to_in(mm: int) -> float:
+    return mm * 0.0393700787
+
+
+def _build_request(parcel: Parcel, destination: Address, settings: ShipFastSettings) -> _RateRequest:
+    return _RateRequest(
+        account_number=settings.account_number.get_secret_value(),
+        parcel=_WireParcel(
+            weight_oz=_grams_to_oz(parcel.weight_grams),
+            length_in=_mm_to_in(parcel.length_mm),
+            width_in=_mm_to_in(parcel.width_mm),
+            height_in=_mm_to_in(parcel.height_mm),
+        ),
+        destination=_WireAddress(
+            line1=destination.line1,
+            line2=destination.line2,
+            city=destination.city,
+            region=destination.state_or_province,
+            postal_code=destination.postal_code,
+            country_code=destination.country_code,
+        ),
     )
-
-
-def _to_address_dto(destination: Address) -> _AddressDTO:
-    return _AddressDTO(
-        line1=destination.line1,
-        line2=destination.line2,
-        city=destination.city,
-        region=destination.state_or_province,
-        postal_code=destination.postal_code,
-        country_code=destination.country_code,
-    )
-
-
-def _send_request(
-    client: httpx.Client, url: str, headers: dict[str, str], body: dict
-) -> httpx.Response:
-    try:
-        response = client.post(url, headers=headers, json=body)
-    except httpx.TimeoutException as exc:
-        raise ProviderTimeout("ShipFast rate request timed out") from exc
-
-    if response.status_code == 429:
-        time.sleep(_RETRY_DELAY_SECONDS)
-        try:
-            response = client.post(url, headers=headers, json=body)
-        except httpx.TimeoutException as exc:
-            raise ProviderTimeout("ShipFast rate request timed out") from exc
-
-    return response
 
 
 def get_quote(parcel: Parcel, destination: Address) -> Quote:
-    """Get the cheapest ground shipping quote from ShipFast for this parcel and destination."""
     settings = ShipFastSettings()
-
-    request_dto = _RateRequestDTO(
-        account_number=settings.account_number.get_secret_value(),
-        parcel=_to_parcel_dto(parcel),
-        destination=_to_address_dto(destination),
-    )
-
-    url = f"{settings.base_url}/v2/rates"
+    request = _build_request(parcel, destination, settings)
+    url = f"{settings.base_url}{_RATES_PATH}"
     headers = settings.vendor_headers()
     timeout = httpx.Timeout(_TIMEOUT_SECONDS)
 
-    with httpx.Client(timeout=timeout) as client:
-        response = _send_request(
-            client, url, headers, request_dto.model_dump(mode="json")
-        )
+    payload = request.model_dump(mode="json")
+
+    try:
+        with httpx.Client(timeout=timeout) as client:
+            response = client.post(url, json=payload, headers=headers)
+            if response.status_code == 429:
+                time.sleep(_RETRY_DELAY_SECONDS)
+                response = client.post(url, json=payload, headers=headers)
+    except httpx.TimeoutException as exc:
+        raise ProviderTimeout("ShipFast rate request timed out") from exc
 
     if response.status_code != 200:
         raise httpx.HTTPStatusError(
@@ -122,13 +108,12 @@ def get_quote(parcel: Parcel, destination: Address) -> Quote:
             response=response,
         )
 
-    rate_response = _RateResponseDTO.model_validate(response.json())
+    parsed = _RateResponse.model_validate(response.json())
 
-    ground_rates = [r for r in rate_response.rates if r.transit_mode in _GROUND_MODES]
+    eligible = [rate for rate in parsed.rates if rate.transit_mode in _GROUND_MODES]
+    if not eligible:
+        raise NoServiceAvailable("No eligible ground services available")
 
-    if not ground_rates:
-        raise NoServiceAvailable("No ground shipping service available from ShipFast")
-
-    cheapest = min(ground_rates, key=lambda r: (r.price_cents, r.service_code))
+    cheapest = min(eligible, key=lambda r: (r.price_cents, r.service_code))
 
     return Quote(amount_minor_units=cheapest.price_cents, currency=cheapest.currency)
