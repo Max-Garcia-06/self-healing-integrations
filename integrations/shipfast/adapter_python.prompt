@@ -57,6 +57,11 @@ R6 (MUST NOT): Log or return the ShipFast API key, account number, or customer a
   identifier, sorted lexicographically.
 - Never call a bare raise_for_status(); branch on response.status_code directly.
 - Define the vendor wire DTOs inside this module and nowhere else.
+- The public surface of this module is exactly one name: get_quote. Every other
+  module-level name — constants, wire DTOs, helpers — MUST begin with a single
+  leading underscore. The vendor's wire format is an implementation detail and
+  must never become part of this module's public API, because that API has to
+  survive every vendor migration unchanged.
 </implementation_constraints>
 
 <dependencies>
