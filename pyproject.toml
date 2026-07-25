@@ -6,6 +6,12 @@ dependencies = [
     "pytest",
     "httpx",
     "pydantic",
+    "pydantic-settings",
     "fastapi>=0.140.0",
     "uvicorn>=0.51.0",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+norecursedirs = ["tom-jerry-agents", ".venv"]
