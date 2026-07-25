@@ -35,9 +35,25 @@ R5 (MUST): Time out after 3 seconds and raise ProviderTimeout.
 R6 (MUST NOT): Log or return the ShipFast API key, account number, or customer address lines.
 </contract_rules>
 
+<implementation_constraints>
+- Get every outbound header from the settings object's vendor_headers() method.
+  Never construct a header by hand and never name an individual header anywhere
+  in this module — this is the single most important line in this file.
+- Read the base URL from the settings object, never from the spec.
+- Apply the timeout per attempt, 3 seconds, via httpx.Timeout. Wrap the base
+  httpx.TimeoutException, not the narrower ReadTimeout, and raise ProviderTimeout.
+- Retry exactly once, only on a 429 response, after a fixed 200ms delay. Retry
+  nothing else.
+- Break ties between equal-price eligible services by the lowest service
+  identifier, sorted lexicographically.
+- Never call a bare raise_for_status(); branch on response.status_code directly.
+- Define the vendor wire DTOs inside this module and nowhere else.
+</implementation_constraints>
+
 <dependencies>
 <include>context/specs/shipfast/openapi.snapshot.json</include>
 <include mode="interface">src/types/shipping.py</include>
+<include mode="interface">src/config/shipfast.py</include>
 </dependencies>
 
 <coverage>

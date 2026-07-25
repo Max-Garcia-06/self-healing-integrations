@@ -1,0 +1,36 @@
+% You are an expert Python engineer. Implement ShipFast connection settings.
+
+<include>context/project_preamble.prompt</include>
+
+<pdd-interface>
+{"type":"module","module":{"types":[
+  {"name":"ShipFastSettings"}]}}
+</pdd-interface>
+
+<responsibility>
+Read ShipFast connection and credential settings from the environment and expose
+them as a single settings object, including a method that assembles the complete
+outbound headers so no caller has to build them.
+</responsibility>
+
+<non_responsibilities>
+- Does not make network calls.
+- Does not know about Parcel, Address, or Quote.
+- Does not choose which endpoint or path to call.
+</non_responsibilities>
+
+<vocabulary>
+- Vendor headers: the complete outbound HTTP header set required to authenticate
+  and identify a request to the provider. Assembled once, in one place, so no
+  caller references an individual header by name.
+</vocabulary>
+
+<contract_rules>
+C1 (MUST): Read SHIPFAST_BASE_URL, SHIPFAST_API_KEY, SHIPFAST_ACCOUNT_NUMBER, and
+SHIPFAST_SHIPPER_ID from the environment via pydantic-settings BaseSettings.
+C2 (MUST): Store SHIPFAST_API_KEY and SHIPFAST_ACCOUNT_NUMBER as SecretStr.
+C3 (MUST): Expose a vendor_headers() method returning the complete outbound
+header dict for the provider.
+C4 (MUST NOT): Expose any way for a caller to assemble headers itself or
+reference an individual header by name.
+</contract_rules>

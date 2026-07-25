@@ -6,12 +6,14 @@
 {"type":"module","module":{"types":[
   {"name":"Parcel"},
   {"name":"Address"},
-  {"name":"Quote"}]}}
+  {"name":"Quote"},
+  {"name":"NoServiceAvailable"},
+  {"name":"ProviderTimeout"}]}}
 </pdd-interface>
 
 <responsibility>
 Define the internal domain types shared across every shipping-rate integration:
-Parcel, Address, and Quote.
+Parcel, Address, Quote, and the exceptions NoServiceAvailable and ProviderTimeout.
 </responsibility>
 
 <non_responsibilities>
@@ -21,15 +23,19 @@ Parcel, Address, and Quote.
 </non_responsibilities>
 
 <vocabulary>
-- Quote: the result of a rate lookup. Carries an integer minor-unit amount and a
+- Quote: the result of a rate lookup. Carries an integer minor-unit value and a
   currency string. A reader must not be able to tell which carrier produced it.
 </vocabulary>
 
 <contract_rules>
 T1 (MUST): Parcel carries the physical attributes needed to request a rate.
 T2 (MUST): Address carries the destination attributes needed to request a rate.
-T3 (MUST): Quote carries an integer minor-unit amount and a currency string.
-T4 (MUST NOT): None of these types reference any vendor, carrier, or wire-format concept.
+T3 (MUST): Quote carries exactly two fields: an integer minor-unit value and a
+currency string.
+T4 (MUST): NoServiceAvailable and ProviderTimeout are exceptions defined in this
+same module.
+T5 (MUST NOT): None of these types or exceptions reference any vendor, carrier,
+or wire-format concept.
 </contract_rules>
 
 <coverage>

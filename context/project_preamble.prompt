@@ -1,0 +1,12 @@
+Northwind is a mid-market e-commerce company. This preamble applies to every
+module in this project.
+
+- Target Python 3.11+.
+- HTTP calls use httpx.
+- Data validation uses pydantic v2 only: `model_validate`, `field_validator`,
+  `ConfigDict`. Never the pydantic v1 API (no `@validator`, no inner `Config`
+  class, no `.dict()` / `.parse_obj()`).
+- Money is always an integer quantity of minor units of a currency, plus an
+  ISO 4217 currency code string. Never a float. Never a `Decimal`.
+- Internal domain types are frozen pydantic models (`ConfigDict(frozen=True)`)
+  and carry no vendor-specific or carrier-specific concepts.

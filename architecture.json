@@ -1,31 +1,38 @@
-{
-  "project": "self-healing-integrations",
-  "modules": [
-    {
-      "path": "src/types/shipping.py",
-      "type": "types",
-      "description": "Internal domain types: Parcel, Address, Quote. No vendor concepts.",
-      "depends_on": [],
-      "pdd_interface": "<pdd-interface>\n{\"type\":\"module\",\"module\":{\"types\":[{\"name\":\"Parcel\"},{\"name\":\"Address\"},{\"name\":\"Quote\"}]}}\n</pdd-interface>"
-    },
-    {
-      "path": "integrations/shipfast/adapter.py",
-      "type": "adapter",
-      "description": "Translates internal Parcel/Address into a ShipFast rate request and the response back into Quote.",
-      "depends_on": [
-        "src/types/shipping.py",
-        "context/specs/shipfast/openapi.snapshot.json"
-      ],
-      "pdd_interface": "<pdd-interface>\n{\"type\":\"module\",\"module\":{\"functions\":[{\"name\":\"get_quote\",\"signature\":\"(parcel: Parcel, destination: Address) -> Quote\",\"returns\":\"Quote\"}]}}\n</pdd-interface>"
-    },
-    {
-      "path": "verification/story_gate.py",
-      "type": "verification",
-      "description": "Runs the user-story regression suite against a regenerated candidate and returns a pass/fail evidence manifest.",
-      "depends_on": [
-        "src/types/shipping.py"
-      ],
-      "pdd_interface": "<pdd-interface>\n{\"type\":\"module\",\"module\":{\"functions\":[{\"name\":\"run_story_gate\",\"signature\":\"(candidate_module: str, stories_dir: str) -> EvidenceManifest\",\"returns\":\"EvidenceManifest\"}]}}\n</pdd-interface>"
-    }
-  ]
-}
+[
+  {
+    "filename": "src/types/shipping.prompt",
+    "filepath": "src/types/shipping.py",
+    "reason": "Internal domain types shared by every shipping-rate integration.",
+    "description": "Parcel, Address, Quote, and the exceptions NoServiceAvailable and ProviderTimeout. No vendor concepts.",
+    "dependencies": [],
+    "priority": 1,
+    "tags": ["python", "types"]
+  },
+  {
+    "filename": "src/config/shipfast.prompt",
+    "filepath": "src/config/shipfast.py",
+    "reason": "ShipFast connection and credential settings.",
+    "description": "Reads SHIPFAST_BASE_URL, SHIPFAST_API_KEY, SHIPFAST_ACCOUNT_NUMBER, and SHIPFAST_SHIPPER_ID from the environment and assembles the outbound vendor headers.",
+    "dependencies": [],
+    "priority": 2,
+    "tags": ["python", "config", "shipfast"]
+  },
+  {
+    "filename": "integrations/shipfast/adapter.prompt",
+    "filepath": "integrations/shipfast/adapter.py",
+    "reason": "Translates Northwind's internal types into a ShipFast rate request and back.",
+    "description": "Calls the ShipFast rates endpoint and returns the cheapest eligible ground Quote.",
+    "dependencies": ["src/types/shipping.prompt", "src/config/shipfast.prompt"],
+    "priority": 3,
+    "tags": ["python", "adapter", "shipfast"]
+  },
+  {
+    "filename": "verification/story_gate.prompt",
+    "filepath": "verification/story_gate.py",
+    "reason": "Runs the user-story regression suite against a regenerated candidate.",
+    "description": "Returns a pass/fail evidence manifest for a candidate module against its user stories.",
+    "dependencies": ["src/types/shipping.prompt"],
+    "priority": 4,
+    "tags": ["python", "verification"]
+  }
+]
