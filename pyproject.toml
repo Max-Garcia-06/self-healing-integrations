@@ -6,4 +6,6 @@ dependencies = [
     "pytest",
     "httpx",
     "pydantic",
+    "fastapi>=0.140.0",
+    "uvicorn>=0.51.0",
 ]
