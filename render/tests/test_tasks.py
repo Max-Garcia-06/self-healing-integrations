@@ -82,3 +82,66 @@ def test_regenerate_adapter_failure(monkeypatch):
     assert result["ok"] is False
     assert result["returncode"] == 1
     assert result["stderr"] == "boom"
+
+
+def test_verify_healed_true(monkeypatch):
+    monkeypatch.setattr(tasks, "run_adapter", lambda url: {"kind": "ADAPTER_OK", "amount": "1240", "currency": "USD"})
+    result = tasks.verify_healed("http://mock:8081")
+    assert result["healed"] is True
+
+
+def test_verify_healed_false_on_wrong_amount(monkeypatch):
+    monkeypatch.setattr(tasks, "run_adapter", lambda url: {"kind": "ADAPTER_OK", "amount": "990", "currency": "USD"})
+    result = tasks.verify_healed("http://mock:8081")
+    assert result["healed"] is False
+
+
+def test_verify_healed_false_on_error(monkeypatch):
+    monkeypatch.setattr(
+        tasks, "run_adapter", lambda url: {"kind": "ADAPTER_ERROR", "amount": "NoServiceAvailable", "currency": "410 Gone"}
+    )
+    result = tasks.verify_healed("http://mock:8081")
+    assert result["healed"] is False
+
+
+def test_evidence_all_true(monkeypatch, tmp_path):
+    adapter_after = tmp_path / "adapter.py"
+    prompt_after = tmp_path / "adapter.prompt"
+    spec = tmp_path / "spec.json"
+    v3 = tmp_path / "v3.json"
+    adapter_after.write_text("new adapter")
+    prompt_after.write_text("<include ../spec.json>\nsame intent")
+    spec.write_text('{"a":1}')
+    v3.write_text('{"a":2}')
+    monkeypatch.setattr(tasks, "ADAPTER_PATH", adapter_after)
+    monkeypatch.setattr(tasks, "PROMPT_PATH", prompt_after)
+    monkeypatch.setattr(tasks, "SPEC_PATH", spec)
+    monkeypatch.setattr(tasks, "V3_SPEC_PATH", v3)
+
+    result = tasks.evidence(
+        adapter_before="old adapter",
+        prompt_before="<include ../old_spec.json>\nsame intent",
+    )
+
+    assert result == {"prompt_intent_unchanged": True, "adapter_changed": True, "spec_changed": True}
+
+
+def test_evidence_detects_changed_intent(monkeypatch, tmp_path):
+    adapter_after = tmp_path / "adapter.py"
+    prompt_after = tmp_path / "adapter.prompt"
+    spec = tmp_path / "spec.json"
+    v3 = tmp_path / "v3.json"
+    adapter_after.write_text("same adapter")
+    prompt_after.write_text("<include ../spec.json>\ndifferent intent now")
+    spec.write_text("{}")
+    v3.write_text("{}")
+    monkeypatch.setattr(tasks, "ADAPTER_PATH", adapter_after)
+    monkeypatch.setattr(tasks, "PROMPT_PATH", prompt_after)
+    monkeypatch.setattr(tasks, "SPEC_PATH", spec)
+    monkeypatch.setattr(tasks, "V3_SPEC_PATH", v3)
+
+    result = tasks.evidence(adapter_before="same adapter", prompt_before="<include ../old.json>\noriginal intent")
+
+    assert result["prompt_intent_unchanged"] is False
+    assert result["adapter_changed"] is False
+    assert result["spec_changed"] is False

@@ -98,3 +98,52 @@ def regenerate_adapter() -> dict:
         "stdout": result.stdout[-4000:],
         "stderr": result.stderr[-4000:],
     }
+
+
+def verify_healed(
+    mock_base_url: str, expected_amount: str = "1240", expected_currency: str = "USD"
+) -> dict:
+    """Confirm the adapter now succeeds against mock_base_url with the expected quote.
+
+    Args:
+        mock_base_url: Base URL of a running ShipFast mock.
+        expected_amount: Expected quote amount in minor units, as a string
+            (matches `run_adapter`'s string output).
+        expected_currency: Expected quote currency code.
+
+    Returns:
+        `healed` and the raw adapter result.
+    """
+    result = run_adapter(mock_base_url)
+    healed = (
+        result["kind"] == "ADAPTER_OK"
+        and result["amount"] == expected_amount
+        and result["currency"] == expected_currency
+    )
+    return {"healed": healed, "result": result}
+
+
+def _strip_pin_lines(text: str) -> str:
+    """Drop vendor-spec-pin lines so intent comparisons ignore which spec is pinned."""
+    return "\n".join(line for line in text.splitlines() if not _PIN_LINE.search(line))
+
+
+def evidence(adapter_before: str, prompt_before: str) -> dict:
+    """Diff pre/post regeneration state into the four self-heal claims.
+
+    Args:
+        adapter_before: `adapter.py` contents captured by `detect_break`,
+            before regeneration.
+        prompt_before: The adapter's `.prompt` contents captured by
+            `detect_break`, before regeneration.
+
+    Returns:
+        `prompt_intent_unchanged`, `adapter_changed`, `spec_changed`.
+    """
+    adapter_after = ADAPTER_PATH.read_text()
+    prompt_after = PROMPT_PATH.read_text()
+    return {
+        "prompt_intent_unchanged": _strip_pin_lines(prompt_before) == _strip_pin_lines(prompt_after),
+        "adapter_changed": adapter_before != adapter_after,
+        "spec_changed": SPEC_PATH.read_text() != V3_SPEC_PATH.read_text(),
+    }
