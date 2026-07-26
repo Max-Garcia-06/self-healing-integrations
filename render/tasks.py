@@ -75,3 +75,26 @@ def detect_break(mock_base_url: str) -> dict:
         "adapter_before": ADAPTER_PATH.read_text(),
         "prompt_before": PROMPT_PATH.read_text(),
     }
+
+
+def regenerate_adapter() -> dict:
+    """Run scripts/pdd_regen.sh to regenerate the adapter and config from their prompts.
+
+    Returns:
+        `ok`, the process return code, and truncated stdout/stderr for
+        diagnostics (Render task outputs must stay JSON-serializable and
+        reasonably small).
+    """
+    result = subprocess.run(
+        ["bash", "scripts/pdd_regen.sh"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return {
+        "ok": result.returncode == 0,
+        "returncode": result.returncode,
+        "stdout": result.stdout[-4000:],
+        "stderr": result.stderr[-4000:],
+    }

@@ -60,3 +60,25 @@ def test_detect_break_false_when_adapter_ok(monkeypatch, tmp_path):
 
     result = tasks.detect_break("http://mock:8081")
     assert result["broken"] is False
+
+
+def test_regenerate_adapter_ok(monkeypatch):
+    monkeypatch.setattr(
+        tasks.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a, 0, stdout="done", stderr=""),
+    )
+    result = tasks.regenerate_adapter()
+    assert result == {"ok": True, "returncode": 0, "stdout": "done", "stderr": ""}
+
+
+def test_regenerate_adapter_failure(monkeypatch):
+    monkeypatch.setattr(
+        tasks.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a, 1, stdout="", stderr="boom"),
+    )
+    result = tasks.regenerate_adapter()
+    assert result["ok"] is False
+    assert result["returncode"] == 1
+    assert result["stderr"] == "boom"
