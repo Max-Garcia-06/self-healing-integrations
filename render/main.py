@@ -7,6 +7,15 @@ the actual six-stage self-heal against it.
 """
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# Running this file directly (`python render/main.py`) puts this file's own
+# directory on sys.path[0], not the repo root, so the `render` package
+# itself wouldn't otherwise resolve. Same gotcha scripts/run_adapter.py
+# and scripts/pdd_regen.sh work around.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from render_sdk import Workflows
 
 from render import tasks
