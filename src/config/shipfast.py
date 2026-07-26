@@ -1,28 +1,26 @@
-"""ShipFast connection settings."""
+"""ShipFast connection and credential settings."""
 
-from pydantic import SecretStr, ConfigDict
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ShipFastSettings(BaseSettings):
-    """Connection and credential settings for the ShipFast carrier API."""
+    """Connection and credential settings for the ShipFast rates API.
 
-    model_config = SettingsConfigDict(
-        env_prefix="SHIPFAST_",
-        frozen=True,
-    )
+    Assembles the complete outbound vendor headers so no caller needs to
+    build them or reference an individual header by name.
+    """
 
-    base_url: str
-    api_key: SecretStr
-    account_number: SecretStr
-    shipper_id: str
+    model_config = SettingsConfigDict(env_prefix="", frozen=True)
+
+    SHIPFAST_BASE_URL: str
+    SHIPFAST_API_KEY: SecretStr
+    SHIPFAST_ACCOUNT_NUMBER: SecretStr
+    SHIPFAST_SHIPPER_ID: str
 
     def vendor_headers(self) -> dict[str, str]:
-        """Assemble the complete outbound HTTP header set for ShipFast requests."""
+        """Return the complete outbound HTTP header set for ShipFast requests."""
         return {
-            "Authorization": f"Bearer {self.api_key.get_secret_value()}",
-            "X-ShipFast-Account-Number": self.account_number.get_secret_value(),
-            "X-ShipFast-Shipper-Id": self.shipper_id,
-            "Accept": "application/json",
-            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.SHIPFAST_API_KEY.get_secret_value()}",
+            "X-Shipper-Id": self.SHIPFAST_SHIPPER_ID,
         }

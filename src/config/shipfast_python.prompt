@@ -33,4 +33,11 @@ C3 (MUST): Expose a vendor_headers() method returning the complete outbound
 header dict for the provider.
 C4 (MUST NOT): Expose any way for a caller to assemble headers itself or
 reference an individual header by name.
+C5 (MUST): For every header parameter the pinned OpenAPI spec declares as
+required on the rates operation, include it in vendor_headers() using the
+exact header name declared in the spec.
 </contract_rules>
+
+<dependencies>
+<include>context/specs/shipfast/v3.json</include>
+</dependencies>

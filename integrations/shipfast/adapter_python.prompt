@@ -51,7 +51,7 @@ R6 (MUST NOT): Log or return the ShipFast API key, account number, or customer a
 </implementation_constraints>
 
 <dependencies>
-<include>context/specs/shipfast/openapi.snapshot.json</include>
+<include>context/specs/shipfast/v3.json</include>
 <include mode="interface">src/types/shipping.py</include>
 <include mode="interface">src/config/shipfast.py</include>
 </dependencies>
