@@ -25,11 +25,14 @@ set -u -o pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PORT="${SHIPFAST_PORT:-8081}"
 BASE="http://127.0.0.1:${PORT}"
+V2_BASELINE_TAG="shipfast-v2-baseline"
 
-# The documented PDD regeneration command. LEAVE EMPTY until PDD is configured
-# in the repo (.pddrc / .pdd). When empty, the demo stops cleanly at STEP 5.
-# Example once wired:  PDD_REGEN_CMD='pdd sync integrations/shipfast/adapter.prompt'
-PDD_REGEN_CMD="${PDD_REGEN_CMD:-}"
+# The PDD regeneration command. Defaults to scripts/pdd_regen.sh, which
+# regenerates src/config/shipfast.py and integrations/shipfast/adapter.py
+# from their prompts and works around two PDD quirks (incremental-patch
+# schema bug, occasional hallucinated import paths) — see that script for
+# details. Override by exporting PDD_REGEN_CMD before running this demo.
+PDD_REGEN_CMD="${PDD_REGEN_CMD:-bash \"$REPO/scripts/pdd_regen.sh\"}"
 
 # Non-secret demo credentials for the mock. NOT real secrets.
 export SHIPFAST_BASE_URL="$BASE"
@@ -128,6 +131,20 @@ run_adapter() {
 # --------------------------------------------------------------------------- #
 banner
 
+# ---- STEP 0: restore the v2 baseline -------------------------------------- #
+# Only the GENERATED code goes back to v2 — the .prompt files stay as they
+# are on disk right now (already pinned to v3). That's the actual story:
+# stale v2 code, an already-updated prompt, regeneration heals the gap.
+# Resetting the prompts too would regenerate another v2 adapter in STEP 5.
+step 0 "Restoring v2 baseline ($V2_BASELINE_TAG)..."
+git -C "$REPO" rev-parse -q --verify "refs/tags/$V2_BASELINE_TAG" >/dev/null \
+  || die "Baseline tag '$V2_BASELINE_TAG' not found. Fetch it or update V2_BASELINE_TAG."
+git -C "$REPO" checkout -q "$V2_BASELINE_TAG" -- \
+  integrations/shipfast/adapter.py \
+  src/config/shipfast.py \
+  || die "Could not restore v2 baseline files from tag '$V2_BASELINE_TAG'."
+ok "restored"
+
 # ---- STEP 1: start mock on v2 --------------------------------------------- #
 step 1 "Starting ShipFast mock (v2)..."
 start_mock || die "Could not start the ShipFast mock."
@@ -166,7 +183,7 @@ esac
 # Snapshot the current (stale, v2) adapter + prompt so STEP 7 can prove what
 # regeneration did and did not change.
 cp "$REPO/integrations/shipfast/adapter.py"     "$SNAP_DIR/adapter.before"    2>/dev/null || true
-cp "$REPO/integrations/shipfast/adapter.prompt" "$SNAP_DIR/prompt.before"     2>/dev/null || true
+cp "$REPO/integrations/shipfast/adapter_python.prompt" "$SNAP_DIR/prompt.before"     2>/dev/null || true
 
 # ---- STEP 5: regenerate ---------------------------------------------------- #
 step 5 "Regenerating adapter..."
@@ -202,7 +219,7 @@ step 7 "Evidence"
 # Prompt INTENT: compare with the vendor-spec pin lines stripped, so swapping
 # which snapshot is pinned does not count as an intent change.
 intent() { grep -v -E '<include|openapi\.snapshot\.json|v3\.json' "$1" 2>/dev/null; }
-if diff <(intent "$SNAP_DIR/prompt.before") <(intent "$REPO/integrations/shipfast/adapter.prompt") >/dev/null 2>&1; then
+if diff <(intent "$SNAP_DIR/prompt.before") <(intent "$REPO/integrations/shipfast/adapter_python.prompt") >/dev/null 2>&1; then
   prompt_ok=1; else prompt_ok=0; fi
 
 # Adapter: must have changed.
