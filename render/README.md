@@ -4,11 +4,19 @@ Real six-stage self-heal, wired as Render Workflows tasks. Separate from
 `../workflows/` (Lawrence's connectivity spike — do not merge these).
 
 - **Assumes** a ShipFast mock is already running and already broke on v3 —
-  this service does not start/stop the mock or touch git state. Use
-  `scripts/demo.sh` (steps 1-4) to get a mock into that state first, or
-  point at your own.
+  this service does not start/stop the mock. Use `scripts/demo.sh` (steps
+  1-4) to get a mock into that state first, or point at your own.
 - Tasks: `detect_break`, `regenerate_adapter`, `verify_healed`, `evidence`,
   and the orchestrator `self_heal` that chains all four.
+
+**Chained task runs don't share a filesystem** — each gets a fresh
+checkout from the built image, not whatever a sibling task wrote to disk.
+So `regenerate_adapter` commits and pushes its regenerated `adapter.py` +
+`shipfast.py` to `main` (needs a `GITHUB_TOKEN` secret env var with push
+access on the workflow service — repo is public, so *reading* needs no
+token, only the push does), and `verify_healed` / `evidence` each pull
+before reading, so they see the actual regenerated code instead of a
+stale snapshot.
 
 `render-sdk` and `pdd-cli` are real dependencies in the repo root
 `pyproject.toml` / `uv.lock` — no separate install step needed either
@@ -54,6 +62,10 @@ Still needed beyond that:
    Service so `mock_base_url` isn't `localhost`.
 2. **An LLM API key** for `pdd-cli`, set as a Render secret env var on the
    workflow service (check your local `pdd` setup for which one it reads).
+3. **`GITHUB_TOKEN`**, a GitHub PAT with `repo` (push) scope on
+   `Max-Garcia-06/self-healing-integrations`, set as a Render secret env
+   var on the workflow service — `regenerate_adapter` needs it to publish
+   its result (see above).
 
 ```bash
 render workflows tasks runs start self_heal \
