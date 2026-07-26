@@ -9,6 +9,8 @@ dependencies = [
     "pydantic-settings",
     "fastapi>=0.140.0",
     "uvicorn>=0.51.0",
+    "render-sdk>=0.7.0",
+    "pdd-cli>=0.0.31",
 ]
 
 [tool.pytest.ini_options]
