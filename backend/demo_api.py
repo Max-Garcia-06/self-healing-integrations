@@ -43,6 +43,8 @@ BASELINE_TAG = "shipfast-v2-baseline"
 SPEC_V2 = REPO / "context" / "specs" / "shipfast" / "openapi.snapshot.json"
 SPEC_V3 = REPO / "context" / "specs" / "shipfast" / "v3.json"
 ADAPTER = REPO / "integrations" / "shipfast" / "adapter.py"
+ADAPTER_REL = "integrations/shipfast/adapter.py"
+ADAPTER_PROMPT = REPO / "integrations" / "shipfast" / "adapter_python.prompt"
 RUN_TIMEOUT_SECONDS = 600
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
@@ -343,16 +345,102 @@ async def events(run_id: str):
     )
 
 
-def _unified(a: str, b: str, fa: str, fb: str) -> str:
-    return "".join(difflib.unified_diff(
-        a.splitlines(keepends=True), b.splitlines(keepends=True),
-        fromfile=fa, tofile=fb, n=3))
+def _split_rows(before: str, after: str) -> list[dict[str, Any]]:
+    """GitHub-style side-by-side rows aligning `before` (left) and `after` (right)."""
+    a = before.splitlines()
+    b = after.splitlines()
+    rows: list[dict[str, Any]] = []
+    sm = difflib.SequenceMatcher(a=a, b=b, autojunk=False)
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == "equal":
+            for k in range(i2 - i1):
+                rows.append({"tag": "equal",
+                             "leftNo": i1 + k + 1, "left": a[i1 + k],
+                             "rightNo": j1 + k + 1, "right": b[j1 + k]})
+        elif tag == "delete":
+            for k in range(i1, i2):
+                rows.append({"tag": "delete", "leftNo": k + 1, "left": a[k],
+                             "rightNo": None, "right": None})
+        elif tag == "insert":
+            for k in range(j1, j2):
+                rows.append({"tag": "insert", "leftNo": None, "left": None,
+                             "rightNo": k + 1, "right": b[k]})
+        else:  # replace — pair lines positionally, spill extras as add/del
+            lefts = list(range(i1, i2))
+            rights = list(range(j1, j2))
+            for k in range(max(len(lefts), len(rights))):
+                li = lefts[k] if k < len(lefts) else None
+                rj = rights[k] if k < len(rights) else None
+                rows.append({
+                    "tag": "replace",
+                    "leftNo": (li + 1) if li is not None else None,
+                    "left": a[li] if li is not None else None,
+                    "rightNo": (rj + 1) if rj is not None else None,
+                    "right": b[rj] if rj is not None else None,
+                })
+    return rows
 
 
-def _stat(diff: str) -> dict[str, int]:
-    added = sum(1 for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++"))
-    removed = sum(1 for l in diff.splitlines() if l.startswith("-") and not l.startswith("---"))
+def _stat_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
+    added = sum(1 for r in rows if r["tag"] in ("insert", "replace") and r["right"] is not None)
+    removed = sum(1 for r in rows if r["tag"] in ("delete", "replace") and r["left"] is not None)
     return {"added": added, "removed": removed}
+
+
+def _file_diff(key: str, filename: str, before: str, after: str,
+               before_label: str, after_label: str, lang: str) -> dict[str, Any]:
+    rows = _split_rows(before, after)
+    stat = _stat_rows(rows)
+    return {
+        "key": key, "filename": filename, "lang": lang,
+        "before_label": before_label, "after_label": after_label,
+        "changed": stat["added"] > 0 or stat["removed"] > 0,
+        "stat": stat, "rows": rows,
+    }
+
+
+def _git_show(ref: str) -> str:
+    try:
+        return subprocess.run(["git", "show", ref], cwd=str(REPO),
+                              capture_output=True, text=True, timeout=15).stdout
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _read(path: Path) -> str:
+    try:
+        return path.read_text()
+    except OSError:
+        return ""
+
+
+@app.get("/api/demo/source")
+async def source():
+    """The durable prompt and the baseline v2 adapter, available before any run.
+
+    Lets the dashboard show the code up front, then reveal the live diff after a
+    heal completes.
+    """
+    spec = _file_diff(
+        "spec", "context/specs/shipfast/*.json",
+        before=_read(SPEC_V2), after=_read(SPEC_V3),
+        before_label="openapi.snapshot.json (v2 · 2.4.1)",
+        after_label="v3.json (v3 · 3.0.0)", lang="json",
+    )
+    return {
+        "prompt": {
+            "filename": "integrations/shipfast/adapter_python.prompt",
+            "content": _read(ADAPTER_PROMPT),
+            "note": "Durable intent — unchanged by regeneration.",
+        },
+        "adapter_v2": {
+            "filename": ADAPTER_REL,
+            "content": _git_show(f"{BASELINE_TAG}:{ADAPTER_REL}"),
+            "label": "v2 baseline",
+            "lang": "python",
+        },
+        "spec": spec,
+    }
 
 
 @app.get("/api/demo/diffs/{run_id}")
@@ -360,31 +448,27 @@ async def diffs(run_id: str):
     run = _current
     if run is None or run.id != run_id:
         raise HTTPException(status_code=404, detail="Unknown run id")
-    try:
-        spec_diff = _unified(SPEC_V2.read_text(), SPEC_V3.read_text(),
-                             "openapi.snapshot.json (v2)", "v3.json (v3)")
-    except OSError as exc:
-        spec_diff = f"(could not read specs: {exc})"
 
-    # adapter: v2 baseline (from tag) vs current working tree (healed, after run)
-    try:
-        before = subprocess.run(
-            ["git", "show", f"{BASELINE_TAG}:integrations/shipfast/adapter.py"],
-            cwd=str(REPO), capture_output=True, text=True, timeout=15).stdout
-    except Exception as exc:  # noqa: BLE001
-        before = ""
-    try:
-        after = ADAPTER.read_text()
-    except OSError:
-        after = ""
-    adapter_diff = _unified(before, after,
-                            "adapter.py (v2 baseline)", "adapter.py (healed v3)")
-
+    adapter = _file_diff(
+        "adapter", ADAPTER_REL,
+        before=_git_show(f"{BASELINE_TAG}:{ADAPTER_REL}"),
+        after=_read(ADAPTER),
+        before_label="v2 baseline", after_label="healed v3", lang="python",
+    )
+    spec = _file_diff(
+        "spec", "context/specs/shipfast/*.json",
+        before=_read(SPEC_V2), after=_read(SPEC_V3),
+        before_label="openapi.snapshot.json (v2 · 2.4.1)",
+        after_label="v3.json (v3 · 3.0.0)", lang="json",
+    )
     return {
-        "spec_diff": spec_diff or "(no differences)",
-        "adapter_diff": adapter_diff or "(no differences — adapter unchanged; run may not have healed)",
-        "spec_stat": _stat(spec_diff),
-        "adapter_stat": _stat(adapter_diff),
+        "files": [adapter, spec],
+        "prompt": {
+            "filename": "integrations/shipfast/adapter_python.prompt",
+            "content": _read(ADAPTER_PROMPT),
+            "changed": False,
+            "note": "Durable intent — unchanged by regeneration.",
+        },
     }
 
 

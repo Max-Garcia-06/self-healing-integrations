@@ -1,4 +1,4 @@
-import type { DemoEvent, Diffs } from "./types";
+import type { DemoEvent, Diffs, Source } from "./types";
 
 export async function startRun(): Promise<string> {
   const res = await fetch("/api/demo/run", { method: "POST" });
@@ -45,4 +45,10 @@ export async function fetchDiffs(runId: string): Promise<Diffs> {
   const res = await fetch(`/api/demo/diffs/${runId}`);
   if (!res.ok) throw new Error(`Backend returned ${res.status} fetching diffs`);
   return (await res.json()) as Diffs;
+}
+
+export async function fetchSource(): Promise<Source> {
+  const res = await fetch("/api/demo/source");
+  if (!res.ok) throw new Error(`Backend returned ${res.status} fetching source`);
+  return (await res.json()) as Source;
 }

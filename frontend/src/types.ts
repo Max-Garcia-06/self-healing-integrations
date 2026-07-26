@@ -27,11 +27,34 @@ export interface DemoEvent {
   timestamp: string;
 }
 
+export interface DiffRow {
+  tag: "equal" | "insert" | "delete" | "replace";
+  leftNo: number | null;
+  left: string | null;
+  rightNo: number | null;
+  right: string | null;
+}
+
+export interface FileDiff {
+  key: string;
+  filename: string;
+  lang: string;
+  before_label: string;
+  after_label: string;
+  changed: boolean;
+  stat: { added: number; removed: number };
+  rows: DiffRow[];
+}
+
 export interface Diffs {
-  spec_diff: string;
-  adapter_diff: string;
-  spec_stat: { added: number; removed: number };
-  adapter_stat: { added: number; removed: number };
+  files: FileDiff[];
+  prompt: { filename: string; content: string; changed: boolean; note?: string };
+}
+
+export interface Source {
+  prompt: { filename: string; content: string; note?: string };
+  adapter_v2: { filename: string; content: string; label: string; lang: string };
+  spec: FileDiff;
 }
 
 // The seven visible workflow steps, in order.

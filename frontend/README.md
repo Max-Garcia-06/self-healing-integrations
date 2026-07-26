@@ -41,8 +41,15 @@ The seven workflow steps light up live from the real run:
 7. Evidence verified — prompt **unchanged**, spec **changed**, adapter
    **changed**, business result **preserved**
 
-Plus a result panel, an evidence panel, and collapsible **spec** and **adapter**
-diffs. All values come from the real run — nothing is hard-coded.
+Plus a result panel, an evidence panel, and a **Code changes** panel — a
+git-style, side-by-side file view with tabs:
+
+- **adapter.py** — the v2 baseline, which becomes an old → new split diff once
+  PDD regenerates it (v2 → healed v3)
+- **OpenAPI spec** — the v2 → v3 vendor change that triggered everything
+- **durable prompt** — shown unchanged, to make the "intent survives" point
+
+All values come from the real run — nothing is hard-coded.
 
 ## Requirement: PDD must be authenticated for steps 5–7
 

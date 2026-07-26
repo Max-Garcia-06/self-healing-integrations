@@ -1,19 +1,25 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { DemoEvent, Diffs, RunState, StepId } from "./types";
-import { fetchDiffs, openEventStream, startRun } from "./api";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { DemoEvent, Diffs, RunState, Source, StepId } from "./types";
+import { fetchDiffs, fetchSource, openEventStream, startRun } from "./api";
 import type { EventStream } from "./api";
 import { Timeline } from "./components/Timeline";
 import { ResultDetails } from "./components/ResultDetails";
 import { EvidencePanel } from "./components/EvidencePanel";
-import { DiffSection } from "./components/DiffSection";
+import { CodeChanges } from "./components/CodeChanges";
 
 export default function App() {
   const [runState, setRunState] = useState<RunState>("idle");
   const [events, setEvents] = useState<Record<string, DemoEvent>>({});
   const [diffs, setDiffs] = useState<Diffs | null>(null);
+  const [source, setSource] = useState<Source | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [disconnected, setDisconnected] = useState(false);
   const streamRef = useRef<EventStream | null>(null);
+
+  // Load the current code up front so the Code changes panel is never empty.
+  useEffect(() => {
+    fetchSource().then(setSource).catch(() => undefined);
+  }, []);
 
   const reset = useCallback(() => {
     streamRef.current?.close();
@@ -121,7 +127,7 @@ export default function App() {
         </div>
       </main>
 
-      <DiffSection diffs={diffs} />
+      <CodeChanges source={source} diffs={diffs} healed={runState === "complete"} />
 
       <footer className="foot">
         <span>ShipFast v2 → v3 &middot; PDD-regenerated adapter &middot; live from <code>scripts/demo.sh</code></span>
