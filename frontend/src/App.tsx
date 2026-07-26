@@ -85,7 +85,7 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="header-main">
-          <h1>Self-Healing Integrations</h1>
+          <h1>Newt</h1>
           <p className="subtitle">
             Durable <span className="accent">intent</span> regenerates disposable
             integrations when a vendor API changes underneath them.
